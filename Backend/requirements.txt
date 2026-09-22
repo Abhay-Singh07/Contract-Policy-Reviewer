@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+sqlalchemy
+alembic
+psycopg2-binary
+pgvector
+groq
+cohere
+pdfplumber
+python-docx
+python-dotenv
+python-multipart
+langgraph
+langchain-core

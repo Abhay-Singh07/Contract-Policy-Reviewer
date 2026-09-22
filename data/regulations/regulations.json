@@ -1,0 +1,90 @@
+[
+  {
+    "section": "DPDP Act 2023, Section 2(i) - Data Fiduciary (definition)",
+    "text": "\"Data Fiduciary\" means any person who alone or in conjunction with other persons determines the purpose and means of processing of personal data."
+  },
+  {
+    "section": "DPDP Act 2023, Section 2(k) - Data Processor (definition)",
+    "text": "\"Data Processor\" means any person who processes personal data on behalf of a Data Fiduciary."
+  },
+  {
+    "section": "DPDP Act 2023, Section 2(t) - Personal data (definition)",
+    "text": "\"Personal data\" means any data about an individual who is identifiable by or in relation to such data."
+  },
+  {
+    "section": "DPDP Act 2023, Section 2(u) - Personal data breach (definition)",
+    "text": "\"Personal data breach\" means any unauthorised processing of personal data or accidental disclosure, acquisition, sharing, use, alteration, destruction or loss of access to personal data, that compromises the confidentiality, integrity or availability of personal data."
+  },
+  {
+    "section": "DPDP Act 2023, Section 5 - Notice",
+    "text": "Every request made to a Data Principal for consent shall be accompanied or preceded by a notice from the Data Fiduciary informing her: the personal data and purpose for which it is proposed to be processed; the manner in which she may exercise her rights; and the manner in which she may complain to the Board."
+  },
+  {
+    "section": "DPDP Act 2023, Section 6(1) - Consent standard",
+    "text": "The consent given by the Data Principal shall be free, specific, informed, unconditional and unambiguous with a clear affirmative action, signifying agreement to the processing of her personal data for the specified purpose, and limited to such personal data as is necessary for that purpose."
+  },
+  {
+    "section": "DPDP Act 2023, Section 6(4)-(6) - Withdrawal of consent",
+    "text": "A Data Principal has the right to withdraw her consent at any time, with ease comparable to giving it. Withdrawal does not affect the legality of processing before withdrawal. Upon withdrawal, the Data Fiduciary shall, within a reasonable time, cease and cause its Data Processors to cease processing that Data Principal's personal data, unless processing without consent is otherwise authorised by law."
+  },
+  {
+    "section": "DPDP Act 2023, Section 8(1)-(2) - Data Fiduciary responsibility and Data Processor contracts",
+    "text": "A Data Fiduciary is responsible for compliance with this Act regardless of any agreement to the contrary, including processing undertaken on its behalf by a Data Processor. A Data Fiduciary may engage a Data Processor to process personal data on its behalf only under a valid contract."
+  },
+  {
+    "section": "DPDP Act 2023, Section 8(5) - Reasonable security safeguards",
+    "text": "A Data Fiduciary shall protect personal data in its possession or under its control, including processing undertaken by a Data Processor on its behalf, by taking reasonable security safeguards to prevent a personal data breach."
+  },
+  {
+    "section": "DPDP Act 2023, Section 8(6) - Data breach notification",
+    "text": "In the event of a personal data breach, the Data Fiduciary shall give the Board and each affected Data Principal intimation of such breach, in such form and manner as may be prescribed."
+  },
+  {
+    "section": "DPDP Act 2023, Section 8(7) - Erasure of personal data",
+    "text": "Unless retention is necessary for compliance with law, a Data Fiduciary shall erase personal data upon the Data Principal withdrawing consent, or as soon as it is reasonable to assume the specified purpose is no longer being served, whichever is earlier, and shall cause its Data Processor to erase any personal data made available to it for processing."
+  },
+  {
+    "section": "DPDP Act 2023, Section 9 - Processing of personal data of children",
+    "text": "A Data Fiduciary shall, before processing personal data of a child, obtain verifiable consent of the parent or lawful guardian. A Data Fiduciary shall not process personal data in a manner likely to cause detrimental effect on a child's well-being, and shall not undertake tracking, behavioural monitoring, or targeted advertising directed at children. \"Child\" means an individual who has not completed the age of eighteen years."
+  },
+  {
+    "section": "DPDP Act 2023, Section 16 - Cross-border transfer of personal data",
+    "text": "The Central Government may, by notification, restrict the transfer of personal data by a Data Fiduciary for processing to such country or territory outside India as may be so notified. This does not restrict the applicability of any other law providing a higher degree of protection or restriction on transfer of personal data outside India."
+  },
+  {
+    "section": "DPDP Act 2023, Section 33 and Schedule - Penalties",
+    "text": "If the Board determines that a breach of this Act is significant, it may impose a monetary penalty specified in the Schedule, having regard to the nature, gravity and duration of the breach; the type of personal data affected; whether the breach was repetitive; and whether the person mitigated the breach's effects. Penalties can extend up to two hundred fifty crore rupees for breach of the obligation to take reasonable security safeguards, and up to two hundred crore rupees for failure to notify the Board or affected Data Principals of a breach."
+  },
+  {
+    "section": "IT Act 2000, Section 43 - Penalty and compensation for damage to computer systems",
+    "text": "If any person, without permission, accesses a computer or computer system, downloads or copies data, introduces a virus or computer contaminant, damages a computer or its data, disrupts a computer's operation, or denies authorised access, he shall be liable to pay damages by way of compensation to the person so affected."
+  },
+  {
+    "section": "IT Act 2000, Section 43A - Compensation for failure to protect data",
+    "text": "Where a body corporate possessing, dealing or handling sensitive personal data or information in a computer resource it owns, controls or operates is negligent in implementing and maintaining reasonable security practices and procedures, and thereby causes wrongful loss or wrongful gain to any person, such body corporate shall be liable to pay damages by way of compensation to the person so affected. Note: the DPDP Act 2023 (Section 44(2)(a)) provides that this section shall be omitted, but as of the Act's current commencement status this repeal is not yet in force."
+  },
+  {
+    "section": "IT Act 2000, Section 66 - Computer related offences",
+    "text": "If any person dishonestly or fraudulently does any act referred to in section 43 (unauthorised access, data theft, introducing viruses, damaging computer systems), he shall be punishable with imprisonment for a term which may extend to three years or with fine which may extend to five lakh rupees or with both."
+  },
+  {
+    "section": "IT Act 2000, Section 66C - Punishment for identity theft",
+    "text": "Whoever, fraudulently or dishonestly makes use of the electronic signature, password or any other unique identification feature of any other person, shall be punished with imprisonment which may extend to three years and shall also be liable to a fine which may extend to rupees one lakh."
+  },
+  {
+    "section": "IT Act 2000, Section 72 - Penalty for breach of confidentiality and privacy",
+    "text": "If any person who, in pursuance of powers conferred under this Act, has secured access to any electronic record, book, register, correspondence, information, document or other material without the consent of the person concerned, discloses such material to any other person, he shall be punished with imprisonment for a term which may extend to two years, or with fine which may extend to one lakh rupees, or with both."
+  },
+  {
+    "section": "IT Act 2000, Section 72A - Punishment for disclosure of information in breach of lawful contract",
+    "text": "Any person, including an intermediary, who while providing services under a lawful contract has secured access to material containing personal information about another person, and discloses that material without consent or in breach of the lawful contract, with intent to cause or knowing that he is likely to cause wrongful loss or wrongful gain, shall be punished with imprisonment for a term which may extend to three years, or with fine which may extend to five lakh rupees, or with both."
+  },
+  {
+    "section": "IT Act 2000, Section 79 - Exemption from liability of intermediary",
+    "text": "An intermediary is not liable for third-party information, data, or communication links made available or hosted by it, provided its function is limited to providing access or is a passive conduit (does not initiate transmission, select the receiver, or modify the content), it observes due diligence, and it expeditiously removes or disables access to unlawful material upon receiving actual knowledge or government notification. This exemption does not apply if the intermediary conspired, abetted, or aided the unlawful act."
+  },
+  {
+    "section": "IT Act 2000, Section 84A - Modes or methods for encryption",
+    "text": "The Central Government may, for secure use of the electronic medium and for promotion of e-governance and e-commerce, prescribe the modes or methods for encryption."
+  }
+]

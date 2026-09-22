@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: contract_reviewer
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/contract_reviewer}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        # must be *healthy*, not just started — the backend's entrypoint now
+        # runs `alembic upgrade head` before uvicorn, which needs Postgres
+        # actually accepting connections, not merely booting.
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    env_file: ./backend/.env  # reuses the same API_KEY the backend enforces — one source of truth
+    environment:
+      # "backend" is the service name above, not "localhost" — inside a
+      # container, localhost means that container itself, never another one.
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

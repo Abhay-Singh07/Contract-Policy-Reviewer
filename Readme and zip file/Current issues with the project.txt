@@ -1,0 +1,1052 @@
+1. First: what you have now
+
+Your current system is roughly:
+
+                    USER
+                      │
+                      ▼
+                 Streamlit
+                      │
+                      ▼
+                   FastAPI
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+      Upload                    Review
+          │                       │
+          ▼                       ▼
+       Parser                LangGraph
+          │                       │
+          ▼                ┌──────┼──────┐
+       Clauses              ▼      ▼      ▼
+          │                Risk  Compliance Ambiguity
+          │                  \     |      /
+          │                   \    |     /
+          │                    ▼   ▼    ▼
+          │                    Findings
+          │                       │
+          │                       ▼
+          │                      QA
+          │                       │
+          │                  ┌────┴────┐
+          │                  │         │
+          │               Requeue    Advance
+          │                  │         │
+          │                  └────┐    │
+          │                       ▼    ▼
+          │                    Specialists
+          │
+          │
+          └───────────────► PostgreSQL
+                                │
+                          ┌─────┴─────┐
+                          ▼           ▼
+                       Tables     pgvector
+                                      │
+                                      ▼
+                                  RAG Memory
+
+And your current RAG is past finding memory, not yet true regulatory RAG.
+
+That's the biggest distinction to understand.
+
+2. 🔴 Biggest issue: your Compliance Agent is NOT actually using the DPDP/IT Acts yet
+
+This is the most important thing I noticed.
+
+Your README says:
+
+"scoped to Indian law (DPDP Act 2023, IT Act 2000)"
+
+and your Compliance Agent prompt tells the LLM to check against those laws.
+
+But your actual retrieval system currently does this:
+
+Clause
+ ↓
+find_similar_findings()
+ ↓
+finding_memory
+ ↓
+past findings
+ ↓
+ALL THREE agents
+
+Your memory.py searches FindingMemory, which contains previous findings.
+
+And dispatch_specialists() retrieves those findings and passes the same memory context to:
+
+Risk
+Compliance
+Ambiguity
+
+Your ingestion scripts technically load the regulation JSON files, but they put them into the same FindingMemory table as previous findings. load_regulations.py explicitly comments that this is a temporary reuse and that a dedicated model should eventually replace it.
+
+This is what I would change.
+
+Instead of:
+
+FindingMemory
+├── past risk findings
+├── past compliance findings
+├── standard clauses
+└── regulations
+
+make separate knowledge types:
+
+FindingMemory
+    ↓
+past reviewed findings
+
+RegulationChunk
+    ↓
+DPDP Act
+IT Act
+
+StandardClause
+    ↓
+NDA / ToS / SAFE etc.
+
+Then:
+
+Compliance Agent
+      ↓
+RegulationRetriever
+      ↓
+DPDP / IT Act chunks
+
+while:
+
+Risk Agent
+      ↓
+StandardClauseRetriever
+      ↓
+similar contract clauses
+
+That would make your architecture much more semantically correct.
+
+3. 🔴 Your RAG query embedding is currently wrong
+
+This is a real technical issue.
+
+Your CohereEmbeddingClient.embed() always uses:
+
+input_type="search_document"
+
+But memory.py uses this same method for the query:
+
+query_vector = embed_client.embed([clause_text])[0]
+
+For semantic search, Cohere distinguishes between:
+
+Documents → search_document
+
+Queries → search_query
+
+Cohere's current documentation explicitly recommends search_query for the query side and search_document for stored documents.
+
+So you should eventually have something like:
+
+embed_documents(...)
+embed_query(...)
+
+rather than one generic:
+
+embed(...)
+
+Conceptually:
+
+Ingestion:
+
+Act chunk
+   ↓
+embed_document()
+   ↓
+pgvector
+
+
+Runtime:
+
+Contract clause
+   ↓
+embed_query()
+   ↓
+pgvector
+
+This is important before you evaluate whether your RAG is actually working.
+
+4. 🔴 Your Cohere implementation may need updating
+
+Your code currently does:
+
+resp = self._client.embed(...)
+return resp.embeddings
+
+But current Cohere examples explicitly request float embeddings and access:
+
+response.embeddings.float
+
+and current semantic-search examples use ClientV2.
+
+So before you rely on live Cohere retrieval, I'd update embeddings.py to match the version of the SDK you're actually installing.
+
+This is particularly important because your requirements file currently says simply:
+
+cohere
+
+with no version pin.
+
+For your local project, that's okay while experimenting, but it means a future pip install could pull a different SDK version.
+
+5. 🔴 Your "mock embeddings" don't test semantic retrieval
+
+This is subtle but important.
+
+Your mock does:
+
+SHA256(text)
+     ↓
+repeat bytes
+     ↓
+vector
+
+So:
+
+"uncapped liability"
+
+and:
+
+"unlimited damages"
+
+don't become semantically similar.
+
+They become unrelated deterministic hashes.
+
+Therefore:
+
+MockEmbeddingClient
+
+is useful for testing:
+
+"Does my database/vector pipeline work?"
+
+but not:
+
+"Does my RAG actually retrieve semantically relevant information?"
+
+So your tests can prove the plumbing works without proving that the retrieval is good.
+
+That's fine for now, but eventually you need a real Cohere test with a few known queries and expected top results.
+
+6. 🔴 Your current RAG is injected into all agents
+
+Your orchestrator does:
+
+similar = find_similar_findings(...)
+memory_context = format_memory_context(similar)
+
+for agent_module in (...):
+    state.findings.extend(
+        agent_module.run(clause, llm, memory_context)
+    )
+
+So:
+
+Risk        ← past findings
+Compliance  ← past findings
+Ambiguity   ← past findings
+
+That's not ideal.
+
+I'd change it to:
+
+Risk
+ ↓
+standard clause retrieval
+
+Compliance
+ ↓
+regulation retrieval
+
+Ambiguity
+ ↓
+no retrieval
+
+
+Potentially later:
+
+QA
+ ↓
+evidence / finding context
+
+Judge
+ ↓
+approved findings only
+
+That gives every agent the right knowledge for its job.
+
+7. 🟠 Your database structure is good for a prototype, but needs cleanup
+
+Your current models are:
+
+Document
+Clause
+Finding
+Report
+FindingMemory
+
+That's a good starting point.
+
+But:
+
+FindingMemory
+
+is currently doing too many jobs.
+
+I'd change it to something like:
+
+Document
+Clause
+Finding
+Report
+
+FindingMemory
+RegulationChunk
+StandardClause
+
+Or, if you want a cleaner generic design:
+
+KnowledgeChunk
+----------------
+id
+source_type
+source_name
+section
+text
+embedding
+metadata
+
+For example:
+
+source_type = regulation
+source_name = DPDP Act 2023
+section = Section 8
+
+That would be very flexible.
+
+8. 🔴 Re-reviewing the same document is currently problematic
+
+This is one of the biggest actual application issues.
+
+Suppose you do:
+
+Upload NDA
+ ↓
+Review
+ ↓
+Works
+
+Then click review again.
+
+Your existing clauses already have IDs.
+
+Then save_clauses() tries to insert them again:
+
+id=c.clause_id
+
+into the database.
+
+Since Clause.id is the primary key, you're going to get a duplicate-key problem.
+
+And Report.document_id is also unique:
+
+document_id ... unique=True
+
+so you can't simply create another report for the same document either.
+
+For local testing
+
+You can simply say:
+
+One review per uploaded document.
+
+But I'd eventually support:
+
+Document
+   │
+   ├── ReviewRun 1
+   ├── ReviewRun 2
+   └── ReviewRun 3
+
+That's actually the better production architecture.
+
+9. 🟠 Your Report model assumes one report per document
+
+Related to the previous issue.
+
+You currently have:
+
+Document
+   │
+   └── Report
+
+I'd eventually use:
+
+Document
+   │
+   ├── ReviewRun
+   │      ├── Findings
+   │      └── Report
+   │
+   └── ReviewRun
+          ├── Findings
+          └── Report
+
+This gives you review history.
+
+That's especially useful for a contract reviewer.
+
+10. 🟠 Your frontend is functional but not pretty yet
+
+Your current Streamlit frontend is very basic:
+
+Upload & Review
+     ↓
+Report summary
+     ↓
+Document
+     ↓
+Findings
+
+It works, but it's definitely not the polished UI you were talking about earlier.
+
+And there's another UX problem:
+
+trigger_review(...)
+
+is called immediately after uploading.
+
+So the browser waits while:
+
+Clause 1
+ ↓
+3 agents
+ ↓
+QA
+ ↓
+possibly requeue
+ ↓
+Clause 2
+ ↓
+...
+ ↓
+Judge
+
+runs synchronously.
+
+For a small contract that's okay.
+
+For a 30-page contract, the user could be staring at:
+
+"Running review pipeline..."
+
+for quite a while.
+
+For your local prototype, I wouldn't redesign this yet.
+
+For the next version, I'd make:
+
+Upload
+ ↓
+Create review
+ ↓
+status = reviewing
+ ↓
+Frontend polls status
+ ↓
+completed
+ ↓
+show report
+11. 🟠 Parser is currently simplistic
+
+Your clause segmentation assumes numbered clauses:
+
+1. Definitions
+2. Term
+3. Indemnity
+
+That's fine for a demo.
+
+But real contracts can have:
+
+1
+1.1
+1.1.1
+(a)
+(b)
+(i)
+(ii)
+
+and headings on separate lines.
+
+Your regex:
+
+r"(?m)^\s*(\d{1,3})[\.\)]\s+(.*)"
+
+only handles the relatively simple numbered case.
+
+That's not a bug for your local prototype.
+
+I'd just mark it as:
+
+Known limitation: simple clause segmentation.
+
+12. 🟠 Your character offsets aren't completely reliable yet
+
+You're doing:
+
+start_char = start
+end_char = end
+
+which is good in principle.
+
+But your parser does:
+
+"\n\n".join(...)
+
+for PDF/DOCX extraction.
+
+The offsets therefore refer to the extracted normalized text, not necessarily the exact original document byte/text positions.
+
+That's fine if your frontend is highlighting the extracted text.
+
+But don't claim:
+
+"exact PDF character coordinates"
+
+because they're not.
+
+13. 🟠 PDF extraction won't handle scanned PDFs
+
+You're using:
+
+pdfplumber
+
+That's perfectly reasonable.
+
+But if the PDF is:
+
+Scanned image pages
+
+there may be no text to extract.
+
+Eventually you'd need OCR.
+
+For now:
+
+Text PDF → supported
+Scanned PDF → unsupported
+
+is completely acceptable.
+
+Just document it.
+
+14. 🟠 LLM failure handling needs improvement
+
+Your base.py handles malformed finding JSON, which is good.
+
+But if Groq fails:
+
+timeout
+rate limit
+network error
+invalid response
+API error
+
+there's currently no retry/backoff layer.
+
+Same with Cohere.
+
+Your README already acknowledges this limitation.
+
+For the local version:
+
+Don't over-engineer it yet.
+
+But eventually:
+
+LLM call
+ ↓
+retry
+ ↓
+retry
+ ↓
+fallback/error
+
+should exist.
+
+15. 🟠 QA has an interesting limitation
+
+Your QA prompt says:
+
+requeue if specialists clearly missed something obvious.
+
+But qa_agent.py immediately returns:
+
+if not findings:
+    return findings, False
+
+So if all three specialists completely miss an obvious issue, QA never gets called with an empty finding set.
+
+Therefore:
+
+Specialists miss everything
+        ↓
+findings = []
+        ↓
+QA returns immediately
+        ↓
+no requeue
+
+Your QA can currently reject bad findings, but it cannot really detect:
+
+"You guys found nothing, but this clause obviously has a problem."
+
+If that's intentional, fine.
+
+If you want true self-critique, you'd eventually change QA to receive the clause even when findings are empty and allow:
+
+{
+  "decisions": [],
+  "needs_requeue": true
+}
+
+That's a worthwhile improvement.
+
+16. 🟠 Agents are sequential
+
+You already documented this.
+
+Currently:
+
+Risk
+ ↓
+Compliance
+ ↓
+Ambiguity
+
+one after another.
+
+But these agents are independent.
+
+You could eventually run:
+
+       ┌── Risk ───────┐
+       │               │
+Clause ├── Compliance ─┼──► QA
+       │               │
+       └── Ambiguity ──┘
+
+in parallel.
+
+That could significantly reduce latency.
+
+But don't do this yet.
+
+For your first project, sequential execution makes debugging much easier.
+
+17. 🟢 Your orchestrator design is good
+
+I don't see a reason to redesign it.
+
+The graph is clean:
+
+dispatch
+ ↓
+QA
+ ├── requeue → dispatch
+ └── proceed → advance
+                   ├── next → dispatch
+                   └── done → judge
+                                  ↓
+                                 END
+
+And you correctly put the deterministic routing in normal Python functions rather than asking an LLM what node to execute.
+
+That's a good design.
+
+18. 🟢 Your Pydantic state design is good
+
+I wouldn't change:
+
+ClauseState
+FindingState
+GraphState
+
+at this point.
+
+It's clear and easy to understand.
+
+19. 🟢 Your LLM abstraction is good
+
+You have:
+
+LLMClient
+   │
+   ├── GroqLLMClient
+   └── MockLLMClient
+
+Keep this.
+
+Same for:
+
+EmbeddingClient
+   │
+   ├── CohereEmbeddingClient
+   └── MockEmbeddingClient
+
+That's a good pattern for this project.
+
+20. 🟠 Your database transaction handling could improve
+
+Your CRUD functions each do:
+
+db.commit()
+
+For example:
+
+create document → commit
+save clauses → commit
+save findings → commit
+save report → commit
+
+That means a failure halfway through can leave partial data.
+
+For example:
+
+Document saved
+Clauses saved
+Findings saved
+Report FAILED
+
+Now you have an incomplete review.
+
+Eventually I'd prefer:
+
+BEGIN TRANSACTION
+
+save document
+save clauses
+save findings
+save report
+
+COMMIT
+
+or:
+
+ROLLBACK
+
+if something fails.
+
+Again: not necessary to block your local testing, but definitely something to fix before calling it production-ready.
+
+21. 🔴 Alembic is still missing
+
+Your README correctly admits:
+
+No Alembic migrations.
+
+And your main.py currently does:
+
+Base.metadata.create_all(engine)
+
+That's perfectly acceptable for your current local prototype.
+
+But eventually:
+
+models.py
+     ↓
+Alembic migration
+     ↓
+PostgreSQL
+
+rather than:
+
+application startup
+     ↓
+create_all()
+
+You already have the Alembic directory planned, so you're fine here.
+
+22. 🟠 Requirements need cleanup
+
+This:
+
+langgraph
+langgraph
+langgraph
+langgraph
+
+is clearly accidental.
+
+Clean it to one entry.
+
+And eventually pin versions:
+
+fastapi==...
+langgraph==...
+pydantic==...
+...
+
+You don't necessarily need exact pins while experimenting, but once the project works, create a reproducible environment.
+
+23. 🟠 .env handling
+
+Your README says:
+
+Copy .env.example to backend/.env
+
+That's correct.
+
+But your Docker Compose says:
+
+env_file: ./backend/.env
+
+while the ZIP only contains:
+
+.env.example
+
+not the actual .env.
+
+That's fine if you're intentionally not shipping secrets.
+
+Just make sure you actually create:
+
+backend/.env
+
+locally before:
+
+docker-compose up
+24. 🟠 Docker isn't fully verified
+
+You explicitly say this hasn't been tested end-to-end.
+
+That's fine.
+
+Your Compose architecture is:
+
+Docker Compose
+    │
+    ├── PostgreSQL + pgvector
+    ├── Backend
+    └── Frontend
+
+That's exactly what you want.
+
+But you should eventually perform one complete test:
+
+docker-compose up
+      ↓
+upload contract
+      ↓
+review
+      ↓
+RAG
+      ↓
+report
+
+before putting it on GitHub.
+
+25. Your tests are better than I expected
+
+You actually have:
+
+test_agents_wiring.py
+test_orchestrator.py
+test_parsing.py
+test_db.py
+test_memory.py
+test_api.py
+
+That's good.
+
+But they're currently executable scripts, not pytest tests.
+
+Your README explicitly says that.
+
+For now, that's fine.
+
+Eventually I'd convert them to:
+
+pytest
+
+with:
+
+def test_upload_document():
+    ...
+
+def test_orchestrator_requeues():
+    ...
+
+def test_rag_retrieval():
+    ...
+
+But I wouldn't prioritize this over getting the actual application working.
+
+26. There's one README mismatch
+
+Your README says:
+
+dispatch_specialists first looks up similar past findings and injects them into each agent's prompt.
+
+That's true.
+
+But it also says:
+
+"grounded by similar findings from past reviews (RAG via pgvector)"
+
+That's technically accurate, but be careful calling this contract/legal RAG.
+
+It's more accurately:
+
+experience-memory retrieval / finding-memory RAG
+
+because you're retrieving previous model findings, not authoritative source documents.
+
+Once you add:
+
+DPDP Act
+IT Act
+standard clauses
+
+then you can legitimately talk about:
+
+regulatory and contractual knowledge-base RAG
+
+That distinction will matter in an interview.
+
+So what would I fix before your FIRST full local test?
+
+I wouldn't fix everything I listed.
+
+I'd use this priority:
+
+🔴 Must fix before local end-to-end test
+1. Fix Cohere embedding implementation
+
+Especially:
+
+document embedding
+vs
+query embedding
+
+and verify the SDK response format. Cohere's current docs distinguish search_document and search_query.
+
+2. Separate regulation knowledge from finding memory
+
+At minimum:
+
+FindingMemory
+RegulationChunk
+3. Make Compliance actually retrieve regulations
+
+Your desired pipeline should become:
+
+Clause
+ ↓
+Compliance Agent
+ ↓
+Regulation Retriever
+ ↓
+DPDP / IT Act chunks
+ ↓
+LLM
+4. Test one real Cohere retrieval
+
+Don't rely solely on the mock.
+
+5. Fix rerun behavior or explicitly disable re-review
+
+For local testing, I'd simply prevent:
+
+review same document twice
+
+until you have ReviewRun.
+
+🟡 Fix after the first successful run
+
+Then:
+
+Better clause segmentation
+Better error handling
+Transaction handling
+pytest
+Docker end-to-end
+UI improvements
+🟢 Production improvements later
+
+Don't touch these yet:
+
+Authentication
+Parallel agents
+Async review jobs
+ReviewRun architecture
+Rate limiting
+Observability
+Retry/backoff
+File storage
+OCR
+Security hardening
+Versioned legal corpus
+
+Those are production concerns, not reasons to delay your first working local version.
+
+Where I would say your project is now
+
+I'd classify it like this:
+
+Area	Status
+Project architecture	🟢 Strong
+Pydantic state	🟢 Done
+LLM abstraction	🟢 Done
+Specialist agents	🟢 Done
+QA loop	🟢 Done
+Judge	🟢 Done
+LangGraph	🟢 Done
+PostgreSQL models	🟢 Mostly done
+CRUD	🟢 Mostly done
+Parsing	🟢 Prototype done
+FastAPI	🟢 Prototype done
+Streamlit	🟢 Prototype done
+Finding-memory RAG	🟡 Implemented
+Regulatory RAG	🔴 Not actually implemented yet
+Cohere live retrieval	🟡 Needs verification/fix
+Alembic	🔴 Not done
+Robust transactions	🔴 Not done
+Async/background review	🔴 Not done
+Tests	🟡 Manual scripts
+Docker	🟡 Not end-to-end verified
+Production security	🔴 Not done
+Overall:
+
+Local prototype: ~80–85%
+
+Production-ready: ~45–50%
+
+And that's actually a very good place to be.
+
+The biggest thing I'd do next is not frontend polish, Docker, or Alembic.
+
+I'd fix the knowledge architecture:
+
+                 KNOWLEDGE
+                    │
+       ┌────────────┼────────────┐
+       ▼            ▼            ▼
+Finding Memory  Regulations  Standard Clauses
+       │            │            │
+       ▼            ▼            ▼
+     Risk       Compliance      Risk
+                 Agent          Agent
+
+Once that works with a real DPDP/IT Act corpus, your project becomes much more defensible as a real multi-agent contract reviewer with RAG, rather than a multi-agent LLM pipeline that happens to have a vector database.

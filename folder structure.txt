@@ -1,0 +1,91 @@
+├── backend/
+│ ├── app/
+│ │ ├── __init__.py
+│ │ ├── main.py # FastAPI entrypoint
+│ │ ├── config.py # env vars, settings (DB URL, API keys)
+│ │ │
+│ │ ├── api/
+│ │ │ ├── __init__.py
+│ │ │ ├── routes_documents.py # upload, list, get document
+│ │ │ ├── routes_review.py # trigger review, get status, get report
+│ │ │ └── routes_health.py
+│ │ │
+│ │ ├── agents/
+│ │ │ ├── __init__.py
+│ │ │ ├── orchestrator.py # LangGraph state graph definition
+│ │ │ ├── risk_agent.py
+│ │ │ ├── compliance_agent.py
+│ │ │ ├── ambiguity_agent.py
+│ │ │ ├── qa_agent.py # self-critique / filter loop
+│ │ │ ├── judge_agent.py # aggregator + scoring
+│ │ │ └── prompts/
+│ │ │ ├── risk_prompt.py
+│ │ │ ├── compliance_prompt.py
+│ │ │ ├── ambiguity_prompt.py
+│ │ │ ├── qa_prompt.py
+│ │ │ └── judge_prompt.py
+│ │ │
+│ │ ├── core/
+│ │ │ ├── __init__.py
+│ │ │ ├── state.py # Pydantic models: FindingState, ClauseState, GraphState
+│ │ │ ├── llm_client.py # Groq client wrapper
+│ │ │ ├── embeddings.py # Cohere embedding wrapper
+│ │ │ └── memory.py # pgvector similarity search for past findings
+│ │ │
+│ │ ├── db/
+│ │ │ ├── __init__.py
+│ │ │ ├── database.py # SQLAlchemy engine/session setup
+│ │ │ ├── models.py # ORM models (documents, clauses, findings, reports, finding_memory)
+│ │ │ ├── crud.py # insert/query helpers
+│ │ │ └── migrations/ # Alembic migrations
+│ │ │ └── versions/
+│ │ │
+│ │ ├── parsing/
+│ │ │ ├── __init__.py
+│ │ │ ├── doc_parser.py # pdfplumber / python-docx extraction
+│ │ │ └── clause_segmenter.py # splits raw text into clause units
+│ │ │
+│ │ ├── ingestion/
+│ │ │ ├── __init__.py
+│ │ │ ├── load_standard_clauses.py # seeds standard-clause corpus into pgvector
+│ │ │ └── load_regulations.py # seeds DPDP Act / IT Act corpus into pgvector
+│ │ │
+│ │ └── schemas/
+│ │ ├── __init__.py
+│ │ ├── document_schema.py
+│ │ ├── finding_schema.py
+│ │ └── report_schema.py
+│ │
+│ ├── tests/
+│ │ ├── test_parsing.py
+│ │ ├── test_agents.py
+│ │ ├── test_memory.py
+│ │ └── test_api.py
+│ │
+│ ├── requirements.txt
+│ ├── alembic.ini
+│ └── Dockerfile
+│
+├── frontend/
+│ ├── streamlit_app.py # main entrypoint
+│ ├── components/
+│ │ ├── upload_panel.py
+│ │ ├── clause_viewer.py # left pane: doc with highlighted clauses
+│ │ ├── findings_panel.py # right pane: findings, severity badges
+│ │ └── report_summary.py
+│ └── utils/
+│ └── api_client.py # calls backend FastAPI routes
+│
+├── data/
+│ ├── standard_clauses/ # sample NDA/ToS/SAFE templates for RAG corpus
+│ └── regulations/ # DPDP Act text, IT Act sections
+│
+├── docs/
+│ ├── architecture.png # diagram for README
+│ └── demo.gif
+│
+├── .env
+├── .gitignore
+├── docker-compose.yml # postgres + backend + frontend
+├── README.md
+└── LICENSE
