@@ -33,9 +33,11 @@ def trigger_review(document_id: str) -> dict:
     )
 
     if not resp.ok:
-        raise RuntimeError(
-            f"Review API failed: HTTP {resp.status_code} — {resp.text}"
-        )
+        return {
+            "_error": True,
+            "status_code": resp.status_code,
+            "response": resp.text,
+        }
 
     return resp.json()
 
