@@ -6,7 +6,8 @@ import requests
 # - Running locally (streamlit run streamlit_app.py, backend on your host) -> defaults to localhost:8000
 # - Running in docker-compose -> set to http://backend:8000 (the service name), since
 #   "localhost" inside a container refers to that container itself, never another one.
-BASE_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+BASE_URL = os.environ.get("BACKEND_URL", "http://localhost:8000").strip().rstrip("/")
+print(f"BACKEND_URL configured as: {BASE_URL}")
 API_KEY = os.environ.get("API_KEY", "")
 
 
