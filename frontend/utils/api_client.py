@@ -26,8 +26,17 @@ def upload_document(file_bytes: bytes, filename: str, content_type: str) -> dict
 
 
 def trigger_review(document_id: str) -> dict:
-    resp = requests.post(f"{BASE_URL}/documents/{document_id}/review", headers=_headers())
-    resp.raise_for_status()
+    resp = requests.post(
+        f"{BASE_URL}/documents/{document_id}/review",
+        headers=_headers(),
+        timeout=120,
+    )
+
+    if not resp.ok:
+        raise RuntimeError(
+            f"Review API failed: HTTP {resp.status_code} — {resp.text}"
+        )
+
     return resp.json()
 
 
