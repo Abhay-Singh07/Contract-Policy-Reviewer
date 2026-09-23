@@ -21,6 +21,14 @@ def render_upload_panel():
         st.success(f"Parsed into {upload_result['clause_count']} clauses.")
 
         with st.spinner("Running review pipeline (risk + compliance + ambiguity agents)..."):
-            trigger_review(upload_result["document_id"])
-        st.session_state.reviewed = True
-        st.rerun()
+            review_result = trigger_review(upload_result["document_id"])
+
+        if review_result.get("_error"):
+            st.error(
+                f"Review API failed — HTTP {review_result['status_code']}"
+            )
+        st.code(review_result["response"])
+        st.stop()
+
+st.session_state.reviewed = True
+st.rerun()
