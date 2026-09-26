@@ -29,7 +29,7 @@ def trigger_review(document_id: str) -> dict:
     resp = requests.post(
         f"{BASE_URL}/documents/{document_id}/review",
         headers=_headers(),
-        timeout=120,
+        timeout=500,
     )
 
     if not resp.ok:
