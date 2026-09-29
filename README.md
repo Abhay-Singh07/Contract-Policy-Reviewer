@@ -109,6 +109,3 @@ Deployed entirely within free-tier limits:
 - The regulation corpus is a curated subset of DPDP Act / IT Act sections, not the full text of either act.
 - No user accounts — access is gated by a single shared API key.
 
-## License
-
-<your license choice, e.g. MIT>
