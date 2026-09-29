@@ -2,41 +2,43 @@
 
 Multi-agent AI system for reviewing contracts against Indian law — the **Digital Personal Data Protection Act (DPDP) 2023** and the **Information Technology Act, 2000**. Upload a contract, and specialist agents independently review it for risk, regulatory compliance, and drafting ambiguity, with a self-critique loop and a final aggregated report.
 
-**Live demo:** [Streamlit app](https://contract-policy-reviewer.streamlit.app/)
+**Live demo:** [Streamlit app](<your-streamlit-community-cloud-url>) · **Backend API:** [AWS Lambda Function URL](<your-lambda-function-url>)
 
 ---
 
 ## Overview
 
 A contract is parsed into clauses, and each clause is run through three independent specialist agents before a judge produces a final report:
-             ┌──────────────┐
-    ┌───────▶│ dispatch_    │◀────────────┐
-    │        │ specialists  │              │
-    │        └──────┬───────┘              │
-    │               │                      │
-    │     (risk + compliance + ambiguity    │
-    │      run on the current clause)       │
-    │               ▼                      │
-    │        ┌──────────────┐              │
-    │        │  qa_review    │              │
-    │        └──────┬───────┘              │
-    │               │                       │
-    │     needs_requeue?  ── yes ───────────┘
-    │               │ no
-    │               ▼
-    │        ┌──────────────┐
-    └────────│ advance_clause│
-              └──────┬───────┘
-                     │
-          more clauses? ── yes ──▶ (back to dispatch_specialists)
-                     │ no
-                     ▼
-              ┌──────────────┐
-              │    judge      │
-              └──────┬───────┘
-                     ▼
-                    END
 
+```
+                 ┌──────────────┐
+        ┌───────▶│ dispatch_    │◀────────────┐
+        │        │ specialists  │              │
+        │        └──────┬───────┘              │
+        │               │                      │
+        │     (risk + compliance + ambiguity    │
+        │      run on the current clause)       │
+        │               ▼                      │
+        │        ┌──────────────┐              │
+        │        │  qa_review    │              │
+        │        └──────┬───────┘              │
+        │               │                       │
+        │     needs_requeue?  ── yes ───────────┘
+        │               │ no
+        │               ▼
+        │        ┌──────────────┐
+        └────────│ advance_clause│
+                  └──────┬───────┘
+                         │
+              more clauses? ── yes ──▶ (back to dispatch_specialists)
+                         │ no
+                         ▼
+                  ┌──────────────┐
+                  │    judge      │
+                  └──────┬───────┘
+                         ▼
+                        END
+```
 
 - **`dispatch_specialists`** runs three independent agents on the current clause: **risk**, **compliance**, and **ambiguity**.
 - **`qa_review`** self-critiques the findings just raised — approving, rejecting, or (within a capped retry budget) sending the clause back for another pass.
@@ -68,6 +70,8 @@ A few choices here were deliberate, not defaults:
 | Frontend | Streamlit ([Streamlit Community Cloud](https://streamlit.io/cloud) in production) |
 | ORM / migrations | SQLAlchemy + Alembic |
 | Testing | pytest, against a dedicated disposable test database |
+| Containerization | Docker (separate images for local dev and Lambda deployment) |
+
 
 ## Testing
 
@@ -105,3 +109,6 @@ Deployed entirely within free-tier limits:
 - The regulation corpus is a curated subset of DPDP Act / IT Act sections, not the full text of either act.
 - No user accounts — access is gated by a single shared API key.
 
+## License
+
+<your license choice, e.g. MIT>
