@@ -2,7 +2,7 @@
 
 Multi-agent AI system for reviewing contracts against Indian law — the **Digital Personal Data Protection Act (DPDP) 2023** and the **Information Technology Act, 2000**. Upload a contract, and specialist agents independently review it for risk, regulatory compliance, and drafting ambiguity, with a self-critique loop and a final aggregated report.
 
-**Live demo:** [Streamlit app](<your-streamlit-community-cloud-url>) · **Backend API:** [AWS Lambda Function URL](<your-lambda-function-url>)
+**Live demo:** [Streamlit app](https://contract-policy-reviewer.streamlit.app/)
 
 ---
 
